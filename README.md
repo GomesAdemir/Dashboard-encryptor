@@ -2,9 +2,9 @@
 
 Protege dashboards HTML estáticos com criptografia autenticada, sem servidor, sem backend, sem texto puro exposto. A decifração ocorre inteiramente na RAM do navegador do visitante — e é descartada ao fechar a aba, ao contrário das suas dívidas.*
 
-<video src="video_exemplo.mp4" controls width="100%"></video>
+<video src="https://raw.githubusercontent.com/GomesAdemir/Dashboard-encryptor/main/video_exemplo.mp4" controls width="100%"></video>
 
----
+---S
 
 ## Índice
 
