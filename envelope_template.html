@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Secure Access</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: #000;
+    color: #fff;
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .container {
+    width: 340px;
+    max-width: 92vw;
+  }
+
+  .header {
+    margin-bottom: 40px;
+  }
+
+  .lockmark {
+    width: 36px;
+    height: 36px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+
+  h1 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: #555;
+    letter-spacing: 0.06em;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #1a1a1a;
+    margin: 28px 0;
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 8px;
+  }
+
+  input {
+    width: 100%;
+    padding: 11px 14px;
+    background: #000;
+    border: 1px solid #2a2a2a;
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+
+  input:focus {
+    border-color: #fff;
+  }
+
+  input::placeholder {
+    color: #333;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 24px;
+    padding: 12px;
+    background: #fff;
+    color: #000;
+    border: none;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  button:hover:not(:disabled) {
+    background: #e0e0e0;
+  }
+
+  button:disabled {
+    background: #1a1a1a;
+    color: #444;
+    cursor: wait;
+  }
+
+  #status {
+    margin-top: 16px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    min-height: 14px;
+    color: #555;
+  }
+
+  #status.error {
+    color: #fff;
+  }
+
+  .footer {
+    margin-top: 48px;
+    font-size: 10px;
+    color: #2a2a2a;
+    letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="lockmark">&#x25A0;</div>
+    <h1>Secure Access</h1>
+    <p class="subtitle">Encrypted Content — AES-256-GCM</p>
+  </div>
+
+  <hr class="divider">
+
+  <form id="auth-form" autocomplete="off">
+    <div class="field">
+      <label for="username">Identification</label>
+      <input id="username" type="text" autocomplete="off" placeholder="—" required autofocus>
+    </div>
+
+    <div class="field">
+      <label for="password">Access Key</label>
+      <input id="password" type="password" autocomplete="off" placeholder="—" required>
+    </div>
+
+    <button id="submit-btn" type="submit">Authenticate</button>
+    <p id="status"></p>
+  </form>
+
+  <p class="footer">AES-256-GCM &middot; PBKDF2-SHA256 &middot; In-memory decryption</p>
+</div>
+
+<script>
+"use strict";
+
+const SALT_B64    = "__SALT__";
+const IV_B64      = "__IV__";
+const PAYLOAD_B64 = "__PAYLOAD__";
+const ITERATIONS  = __ITERATIONS__;
+
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+async function unlock(username, password) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw", enc.encode(username + ":" + password), { name: "PBKDF2" }, false, ["deriveKey"]
+  );
+  const key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: b64ToBytes(SALT_B64), iterations: ITERATIONS, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false, ["decrypt"]
+  );
+  const buf = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: b64ToBytes(IV_B64) }, key, b64ToBytes(PAYLOAD_B64)
+  );
+  return new TextDecoder("utf-8").decode(buf);
+}
+
+document.getElementById("auth-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const status = document.getElementById("status");
+  const btn    = document.getElementById("submit-btn");
+
+  if (!crypto?.subtle) {
+    status.className = "error";
+    status.textContent = "Web Crypto unavailable — use https or localhost";
+    return;
+  }
+
+  btn.disabled = true;
+  status.className = "";
+  status.textContent = "Deriving key...";
+
+  try {
+    const html = await unlock(
+      document.getElementById("username").value,
+      document.getElementById("password").value
+    );
+    document.open();
+    document.write(html);
+    document.close();
+  } catch {
+    status.className = "error";
+    status.textContent = "Access denied";
+    document.getElementById("password").value = "";
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

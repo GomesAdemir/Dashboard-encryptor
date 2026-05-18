@@ -1,0 +1,28 @@
+# ─── REGRA NÚMERO UM ────────────────────────────────────────────────────────
+# Dashboards em TEXTO PURO. Se commitados, transformam todo este projeto numa
+# piada. O Git tem memória de elefante: um commit acidental fica no histórico
+# para sempre — e "git rm" não apaga o passado, só adiciona mais um commit.
+dashboard.html
+dashboard_olimpiadas.html
+
+# Arquivos de saída criptografada
+# O arquivo selado É publicável e pode ser versionado se desejado.
+# Se preferir não versioná-lo, descomente:
+# dashboard_olimpiadas_encrypted.html
+
+# Bases de dados e arquivos grandes — não pertencem ao repositório
+*.csv
+*.xlsx
+*.parquet
+
+# Ambiente virtual Python (Ubuntu 24.04 / PEP 668)
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
